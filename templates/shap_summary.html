@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHAP Summary Plot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .plot-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 2px solid #e9ecef;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+
+        .plot-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .plot-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 30px 0;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .info-section {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .info-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .info-section p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .info-section ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            text-decoration: none;
+        }
+
+        .back-button:active {
+            transform: translateY(0);
+        }
+
+        .explanation-text {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+            text-align: left;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .explanation-text h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .explanation-text p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .plot-container {
+                padding: 20px;
+            }
+            
+            .info-section {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Fade in animation */
+        .container {
+            opacity: 0;
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔍 SHAP Feature Interaction Analysis</h2>
+
+        {% if image_path %}
+            <div class="explanation-text">
+                <h4>What is SHAP?</h4>
+                <p>SHAP (SHapley Additive exPlanations) values explain feature interactions and their impact on model predictions. This interaction plot reveals how Ethnicity and Gender features work together to influence hiring decisions, showing potential bias patterns in the model's behavior.</p>
+            </div>
+
+            <div class="plot-container">
+                <img src="{{ url_for('static', filename='shap_summary.png') }}" 
+                     alt="SHAP Summary Plot showing feature importance and impact on model predictions" 
+                     class="plot-image">
+            </div>
+
+            <div class="info-section">
+                <h3>🔍 How to Read This Interaction Plot</h3>
+                <ul>
+                    <li><strong>Y-axis:</strong> Feature interactions (Ethnicity-Ethnicity, Ethnicity-Gender, Gender-Gender)</li>
+                    <li><strong>X-axis:</strong> SHAP interaction values (impact on model output)</li>
+                    <li><strong>Color coding:</strong> Blue and red dots represent different feature value combinations</li>
+                    <li><strong>Dot position:</strong> Right = increases prediction, Left = decreases prediction</li>
+                    <li><strong>Clustering patterns:</strong> Tight clusters suggest consistent interaction effects</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Key Observations:</strong></p>
+                <ul>
+                    <li><strong>Ethnicity-Gender interactions:</strong> Show varying impacts around zero, indicating complex demographic interactions</li>
+                    <li><strong>Gender-Gender effects:</strong> Display spread patterns suggesting gender has nuanced internal effects</li>
+                    <li><strong>Symmetrical patterns:</strong> Both positive and negative SHAP values indicate bidirectional feature influences</li>
+                </ul>
+            </div>
+
+        {% else %}
+            <div class="error-message">
+                ⚠️ SHAP summary plot not available. Please ensure the model has been trained and SHAP analysis has been completed.
+            </div>
+            
+            <div class="explanation-text">
+                <h4>🔄 Troubleshooting</h4>
+                <p>If you're seeing this message, it could be because:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>The model hasn't been trained yet</li>
+                    <li>SHAP analysis is still processing</li>
+                    <li>There was an error generating the plot</li>
+                </ul>
+            </div>
+        {% endif %}
+
+        <a href="/" class="back-button">⬅ Back to Home</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Law Firm Recruitment Bias App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2rem;
+            position: relative;
+        }
+
+        h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        .form-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        select:focus, input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            align-self: center;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .prediction-result {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .divider {
+            border: none;
+            height: 2px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            margin: 40px 0;
+            border-radius: 1px;
+        }
+
+        .audit-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .audit-links {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .audit-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 25px;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.1);
+        }
+
+        .audit-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .form-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
+            }
+            
+            .audit-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .audit-link {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+
+        /* Animation for form elements */
+        .form-group {
+            opacity: 0;
+            animation: slideIn 0.6s ease forwards;
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+        .form-group:nth-child(3) { animation-delay: 0.3s; }
+        .form-group:nth-child(4) { animation-delay: 0.4s; }
+        .form-group:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Candidate Prediction</h2>
+        <form action="/predict" method="post">
+            <div class="form-container">
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="gender">Gender:</label>
+                        <select name="gender" id="gender">
+                            <option value="0">Male</option>
+                            <option value="1">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ethnicity">Ethnicity:</label>
+                        <select name="ethnicity" id="ethnicity">
+                            <option value="0">Hausa</option>
+                            <option value="1">Igbo</option>
+                            <option value="2">Yoruba</option>
+                            <option value="3">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="university">University:</label>
+                        <select name="university" id="university">
+                            <option value="0">ABU</option>
+                            <option value="1">UNN</option>
+                            <option value="2">UI</option>
+                            <option value="3">UNILAG</option>
+                            <option value="4">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialty">Specialty:</label>
+                        <select name="specialty" id="specialty">
+                            <option value="0">Litigation</option>
+                            <option value="1">Corporate</option>
+                            <option value="2">Intellectual Property</option>
+                            <option value="3">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="experience">Experience Level:</label>
+                        <select name="experience" id="experience">
+                            <option value="0">Entry-level</option>
+                            <option value="1">Junior</option>
+                            <option value="2">Mid-level</option>
+                            <option value="3">Senior</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gpa">GPA:</label>
+                        <input type="text" name="gpa" id="gpa" placeholder="e.g., 3.75">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="publications">Publications:</label>
+                        <input type="number" name="publications" id="publications" placeholder="Number of publications" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="interview">Interview Score:</label>
+                        <input type="text" name="interview" id="interview" placeholder="e.g., 85">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="resume">Resume Text:</label>
+                <textarea name="resume" id="resume" placeholder="Enter the candidate's resume text here..."></textarea>
+            </div>
+
+            <input type="submit" value="Predict Candidate Success" class="submit-btn">
+        </form>
+
+        <div class="prediction-result">
+            <h3>{{ prediction_text }}</h3>
+        </div>
+
+        <hr class="divider">
+        
+        <div class="audit-section">
+            <h2>Bias & Explainability</h2>
+            <div class="audit-links">
+                <a href="/audit" class="audit-link">📊 View Bias Audit</a>
+                <a href="/shap" class="audit-link">🔍 View SHAP Explanations</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
