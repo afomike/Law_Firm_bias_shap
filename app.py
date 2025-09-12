@@ -1,9 +1,13 @@
 from flask import Flask, request, render_template
 import pickle
 import numpy as np
-
+import pandas as pd
 app = Flask(__name__)
 
+
+model = pickle.load(open('Model/model.pkl', 'rb'))
+vectorizer = pickle.load(open('Model/vectorizer.pkl', 'rb'))
+scaler = pickle.load(open('Model/scaler.pkl', 'rb'))
 # Load model and tools
 try:
     model = pickle.load(open('Model/model.pkl', 'rb'))
@@ -33,22 +37,29 @@ def predict():
         publications = int(request.form['publications'])
         interview_score = float(request.form['interview'])
         resume_text = request.form['resume']
-
-        # Scale GPA, publications, interview score
+        
+        # Scale GPA, Publications, InterviewScore
         scaled = scaler.transform([[gpa, publications, interview_score]])[0]
+        gpa_scaled, publications_scaled, interview_scaled = scaled
 
-        # Combine all structured features
-        structured_features = [gender, ethnicity, university, specialty, experience] + list(scaled)
-
-        # Vectorize resume
+        # Vectorize resume (TF-IDF with max_features=15)
         resume_vec = vectorizer.transform([resume_text]).toarray()[0]
 
-        # Final feature vector
-        features = np.array(structured_features + list(resume_vec)).reshape(1, -1)
+        # Build feature DataFrame in the same order as training
+        # Build feature DataFrame in the same order as training
+        features_df = pd.DataFrame([[  
+            gender, ethnicity, university, specialty, experience,
+            gpa_scaled, publications_scaled, interview_scaled, *resume_vec
+        ]], columns=[
+            'Gender','Ethnicity','University','Specialty','Experience',
+            'GPA','Publications','InterviewScore'
+        ] + list(map(str, range(len(resume_vec)))))  # TF-IDF columns
+
 
         # Predict
-        prediction = model.predict(features)[0]
+        prediction = model.predict(features_df)[0]
         result = "Hired ✅" if prediction == 1 else "Not Hired ❌"
+
         return render_template('index.html', prediction_text=result)
 
     except Exception as e:
