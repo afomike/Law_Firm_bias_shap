@@ -1,371 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bias Audit</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bias Audit — LexAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:        #0d0f14;
+      --ink-2:      #2a2d36;
+      --ink-muted:  #6b7280;
+      --paper:      #fafaf8;
+      --cream:      #f4f1eb;
+      --gold:       #c9a84c;
+      --gold-light: #e8d49a;
+      --gold-dim:   #7a6330;
+      --accent:     #1a3a5c;
+      --danger:     #b94040;
+      --danger-bg:  #fdf2f2;
+      --success:    #2e7d52;
+      --success-bg: #f0faf4;
+      --warning:    #92610a;
+      --warning-bg: #fdf8ee;
+      --border:     rgba(13,15,20,0.10);
+      --shadow-md:  0 8px 32px rgba(13,15,20,0.10);
+      --r:          10px;
+      --r-lg:       18px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 64px;
+      background: rgba(250,250,248,0.90); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem; font-weight: 900;
+      color: var(--ink); text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.85rem; font-weight: 500; color: var(--ink-muted);
+      text-decoration: none;
+      padding: 6px 14px; border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: background 0.2s, color 0.2s;
+    }
+    .back-link:hover { background: var(--cream); color: var(--ink); }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            text-align: center;
-        }
+    /* PAGE HEADER */
+    .page-header {
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.10) 0%, transparent 70%),
+        var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 48px 48px;
+    }
+    .page-header-inner { max-width: 1040px; margin: 0 auto; }
+    .page-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--gold-dim);
+      margin-bottom: 14px; display: block;
+    }
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; letter-spacing: -1px; line-height: 1.1;
+      color: var(--ink); margin-bottom: 14px;
+    }
+    .page-desc { font-size: 1rem; color: var(--ink-muted); max-width: 500px; }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 30px;
-            font-size: 2.2rem;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-        }
+    /* MAIN */
+    main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
 
-        h2::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 2px;
-        }
+    /* METRICS ROW */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .metric-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px 20px;
+    }
+    .metric-card.danger { border-color: rgba(185,64,64,0.25); background: var(--danger-bg); }
+    .metric-card.success { border-color: rgba(46,125,82,0.25); background: var(--success-bg); }
+    .metric-card.warning { border-color: rgba(146,97,10,0.25); background: var(--warning-bg); }
+    .metric-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-muted);
+      margin-bottom: 8px; display: block;
+    }
+    .metric-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700; color: var(--ink); line-height: 1;
+    }
+    .metric-card.danger .metric-value { color: var(--danger); }
+    .metric-card.success .metric-value { color: var(--success); }
+    .metric-card.warning .metric-value { color: var(--warning); }
+    .metric-sub { font-size: 0.78rem; color: var(--ink-muted); margin-top: 6px; }
 
-        .audit-container {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 30px;
-            margin: 30px 0;
-            border: 2px solid #e9ecef;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-        }
+    /* CHART CARD */
+    .chart-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .chart-card-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--cream);
+    }
+    .chart-card-title {
+      font-weight: 700; font-size: 0.95rem; color: var(--ink);
+    }
+    .chart-card-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.06em;
+      padding: 4px 10px; border-radius: 100px;
+      background: rgba(185,64,64,0.1); color: var(--danger);
+      font-weight: 500;
+    }
+    .chart-body {
+      padding: 32px;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 200px;
+      background: var(--paper);
+    }
+    .chart-body img {
+      max-width: 100%; height: auto; border-radius: 6px;
+      box-shadow: var(--shadow-md);
+    }
+    .chart-placeholder {
+      text-align: center; color: var(--ink-muted);
+    }
+    .chart-placeholder .icon { font-size: 2.4rem; margin-bottom: 12px; display: block; }
+    .chart-placeholder p { font-size: 0.9rem; }
 
-        .audit-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+    /* FINDINGS */
+    .findings-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .finding-card {
+      border-radius: var(--r); padding: 24px;
+      border: 1px solid var(--border);
+    }
+    .finding-card.critical {
+      background: var(--danger-bg);
+      border-color: rgba(185,64,64,0.2);
+    }
+    .finding-card.action {
+      background: var(--warning-bg);
+      border-color: rgba(146,97,10,0.2);
+    }
+    .finding-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .finding-icon { font-size: 1.2rem; }
+    .finding-title {
+      font-weight: 700; font-size: 0.9rem;
+      color: var(--ink);
+    }
+    .finding-list {
+      list-style: none; display: flex; flex-direction: column; gap: 8px;
+    }
+    .finding-list li {
+      font-size: 0.84rem; color: var(--ink-2);
+      padding-left: 16px; position: relative; line-height: 1.5;
+    }
+    .finding-list li::before {
+      content: '→'; position: absolute; left: 0;
+      color: var(--gold-dim); font-size: 0.78rem;
+    }
 
-        .audit-image:hover {
-            transform: scale(1.02);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-        }
+    /* WHAT IS */
+    .explainer-card {
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 28px 32px;
+      background: var(--cream);
+      border-left: 3px solid var(--gold);
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .explainer-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--ink);
+      margin-bottom: 10px;
+    }
+    .explainer-card p { font-size: 0.88rem; color: var(--ink-muted); line-height: 1.7; }
 
-        .error-message {
-            background: linear-gradient(135deg, #ff6b6b, #ffa726);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 30px 0;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
+    /* FOOTER NAV */
+    .page-footer-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 40px; margin-top: 40px;
+      border-top: 1px solid var(--border);
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .footer-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.88rem; font-weight: 600; text-decoration: none;
+      padding: 12px 22px; border-radius: 8px;
+      border: 1.5px solid var(--border); color: var(--ink);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .footer-btn:hover { background: var(--cream); border-color: var(--ink-muted); }
+    .footer-btn.primary {
+      background: var(--ink); color: var(--paper); border-color: var(--ink);
+    }
+    .footer-btn.primary:hover { background: var(--ink-2); }
 
-        .info-section {
-            background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin: 30px 0;
-            text-align: left;
-        }
-
-        .info-section h3 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .info-section p, .info-section li {
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-
-        .info-section ul {
-            margin-left: 20px;
-            line-height: 1.8;
-        }
-
-        .explanation-text {
-            background: white;
-            border-left: 4px solid #fd79a8;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-            text-align: left;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .explanation-text h4 {
-            color: #fd79a8;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        .explanation-text p {
-            color: #555;
-            line-height: 1.6;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-
-        .metric-card {
-            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(116, 185, 255, 0.3);
-            transition: transform 0.3s ease;
-        }
-
-        .metric-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .metric-card h4 {
-            font-size: 1rem;
-            margin-bottom: 10px;
-            opacity: 0.9;
-        }
-
-        .metric-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-        }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            margin-top: 20px;
-        }
-
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-            text-decoration: none;
-        }
-
-        .back-button:active {
-            transform: translateY(0);
-        }
-
-        .alert-box {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: left;
-        }
-
-        .alert-box.warning {
-            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
-        }
-
-        .alert-box.critical {
-            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
-        }
-
-        .alert-box h4 {
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-
-        /* Loading animation */
-        .loading {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            h2 {
-                font-size: 1.8rem;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .audit-container {
-                padding: 20px;
-            }
-            
-            .info-section {
-                padding: 20px;
-            }
-
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Fade in animation */
-        .container {
-            opacity: 0;
-            animation: fadeIn 0.8s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .page-header { padding: 40px 20px 32px; }
+      .metrics-row { grid-template-columns: 1fr; }
+      .findings-grid { grid-template-columns: 1fr; }
+      .page-footer-nav { flex-direction: column; gap: 12px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>📊 Bias Audit Results</h2>
 
-        <div class="explanation-text">
-            <h4>What is Bias Auditing?</h4>
-            <p>This bias audit reveals concerning gender disparities in our AI model's hiring predictions. The analysis shows significant differences in predicted hiring rates between male and female candidates, indicating potential gender bias that requires immediate attention.</p>
-        </div>
+<nav>
+  <a href="/" class="nav-logo">Lex<span>AI</span></a>
+  <a href="/" class="back-link">← Back to Home</a>
+</nav>
 
-        {% if image_path %}
-            <div class="audit-container">
-                <img src="{{ image_path }}" 
-                     alt="Bias Audit Chart showing fairness metrics across different demographic groups" 
-                     class="audit-image">
-            </div>
+<div class="page-header">
+  <div class="page-header-inner">
+    <span class="page-eyebrow">Responsible AI · Fairness Report</span>
+    <h1 class="page-title">Bias Audit Results</h1>
+    <p class="page-desc">Demographic parity analysis across gender groups to surface and quantify hiring prediction disparities.</p>
+  </div>
+</div>
 
-            <div class="info-section">
-                <h3>⚠️ Critical Bias Findings</h3>
-                <p><strong>Gender Disparity Detected:</strong></p>
-                <ul>
-                    <li><strong>Male Candidates (0):</strong> ~20% predicted hiring rate</li>
-                    <li><strong>Female Candidates (1):</strong> ~25% predicted hiring rate</li>
-                    <li><strong>Bias Gap:</strong> 5 percentage point difference favoring female candidates</li>
-                    <li><strong>Statistical Significance:</strong> This disparity may indicate systematic bias in the model</li>
-                </ul>
-                <p style="margin-top: 15px;"><strong>Recommended Actions:</strong></p>
-                <ul>
-                    <li>Review training data for gender-related patterns</li>
-                    <li>Implement bias mitigation techniques</li>
-                    <li>Consider demographic parity constraints</li>
-                    <li>Audit model features for proxy discrimination</li>
-                </ul>
-            </div>
+<main>
 
-            <!-- Sample metrics cards - you can populate these with actual data from your Flask app -->
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <h4>Gender Bias Gap</h4>
-                    <div class="metric-value">5.0%</div>
-                </div>
-                <div class="metric-card">
-                    <h4>Male Hiring Rate</h4>
-                    <div class="metric-value">20.5%</div>
-                </div>
-                <div class="metric-card">
-                    <h4>Female Hiring Rate</h4>
-                    <div class="metric-value">25.0%</div>
-                </div>
-            </div>
-
-            <!-- Alert boxes for different bias levels -->
-            <div class="alert-box warning">
-                <h4>⚠️ Bias Alert</h4>
-                <p>The model shows a statistically significant gender bias with female candidates receiving 5% higher predicted hiring rates. This disparity violates fair hiring principles and requires immediate model recalibration.</p>
-            </div>
-
-        {% else %}
-            <div class="error-message">
-                ⚠️ Bias audit results not available. Please ensure the model has been trained and bias analysis has been completed.
-            </div>
-            
-            <div class="explanation-text">
-                <h4>🔄 Troubleshooting</h4>
-                <p>If you're seeing this message, it could be because:</p>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                    <li>The model hasn't been trained with sufficient data</li>
-                    <li>Bias analysis is still processing</li>
-                    <li>There was an error generating the audit report</li>
-                    <li>No demographic data available for analysis</li>
-                </ul>
-            </div>
-
-            <div class="alert-box warning">
-                <h4>⚠️ Important Note</h4>
-                <p>Bias auditing is crucial for responsible AI deployment. Without proper bias analysis, your model may inadvertently discriminate against certain groups.</p>
-            </div>
-        {% endif %}
-
-        <a href="/" class="back-button">⬅ Back to Home</a>
+  <!-- METRICS -->
+  <div class="metrics-row">
+    <div class="metric-card warning">
+      <span class="metric-label">Gender Bias Gap</span>
+      <div class="metric-value">5.0%</div>
+      <div class="metric-sub">Percentage point difference</div>
     </div>
+    <div class="metric-card success">
+      <span class="metric-label">Male Hiring Rate</span>
+      <div class="metric-value">20.5%</div>
+      <div class="metric-sub">Predicted positive rate</div>
+    </div>
+    <div class="metric-card danger">
+      <span class="metric-label">Female Hiring Rate</span>
+      <div class="metric-value">25.0%</div>
+      <div class="metric-sub">+4.5pp above male baseline</div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-card-title">Predicted Hiring Rate by Gender</span>
+      <span class="chart-card-badge">⚠ Disparity Detected</span>
+    </div>
+    <div class="chart-body">
+      {% if image_path %}
+        <img src="{{ image_path }}" alt="Bias audit chart showing hiring rate disparity by gender">
+      {% else %}
+        <div class="chart-placeholder">
+          <span class="icon">📊</span>
+          <p>Bias audit chart not yet available.<br>Train the model and run bias analysis to generate this report.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- FINDINGS -->
+  <div class="findings-grid">
+    <div class="finding-card critical">
+      <div class="finding-header">
+        <span class="finding-icon">⚠️</span>
+        <span class="finding-title">Critical Findings</span>
+      </div>
+      <ul class="finding-list">
+        <li>Male candidates predicted at ~20% hiring rate</li>
+        <li>Female candidates predicted at ~25% hiring rate</li>
+        <li>5 percentage point gap favoring female candidates</li>
+        <li>Disparity may indicate systematic model bias</li>
+        <li>Violates demographic parity fairness criterion</li>
+      </ul>
+    </div>
+    <div class="finding-card action">
+      <div class="finding-header">
+        <span class="finding-icon">🛠️</span>
+        <span class="finding-title">Recommended Actions</span>
+      </div>
+      <ul class="finding-list">
+        <li>Review training data for gender-correlated patterns</li>
+        <li>Apply reweighing or resampling bias mitigation</li>
+        <li>Enforce demographic parity constraints in retraining</li>
+        <li>Audit features for gender proxy discrimination</li>
+        <li>Run post-hoc calibration across demographic groups</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- EXPLAINER -->
+  <div class="explainer-card">
+    <h3>What is Bias Auditing?</h3>
+    <p>Bias auditing compares a model's predicted positive rates across demographic subgroups to detect systematic disparities. Demographic parity requires that each group receives positive predictions at roughly equal rates, independent of group membership. This audit examines gender as a protected attribute and flags statistically meaningful gaps that could indicate the model is encoding historic discrimination present in training data.</p>
+  </div>
+
+  <!-- FOOTER NAV -->
+  <div class="page-footer-nav">
+    <a href="/" class="footer-btn">← Back to Demo</a>
+    <a href="/shap" class="footer-btn primary">View SHAP Explanations →</a>
+  </div>
+
+</main>
+
 </body>
 </html>

@@ -1,281 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHAP Summary Plot</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHAP Explanations — LexAI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:        #0d0f14;
+      --ink-2:      #2a2d36;
+      --ink-muted:  #6b7280;
+      --paper:      #fafaf8;
+      --cream:      #f4f1eb;
+      --gold:       #c9a84c;
+      --gold-light: #e8d49a;
+      --gold-dim:   #7a6330;
+      --accent:     #1a3a5c;
+      --border:     rgba(13,15,20,0.10);
+      --shadow-md:  0 8px 32px rgba(13,15,20,0.10);
+      --r:          10px;
+      --r-lg:       18px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper); color: var(--ink);
+      line-height: 1.6; min-height: 100vh;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 999; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 64px;
+      background: rgba(250,250,248,0.90); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem; font-weight: 900; color: var(--ink); text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.85rem; font-weight: 500; color: var(--ink-muted);
+      text-decoration: none; padding: 6px 14px; border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: background 0.2s, color 0.2s;
+    }
+    .back-link:hover { background: var(--cream); color: var(--ink); }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            text-align: center;
-        }
+    .page-header {
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(26,58,92,0.07) 0%, transparent 70%),
+        var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 48px 48px;
+    }
+    .page-header-inner { max-width: 1040px; margin: 0 auto; }
+    .page-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--gold-dim);
+      margin-bottom: 14px; display: block;
+    }
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; letter-spacing: -1px; line-height: 1.1;
+      color: var(--ink); margin-bottom: 14px;
+    }
+    .page-desc { font-size: 1rem; color: var(--ink-muted); max-width: 500px; }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 30px;
-            font-size: 2.2rem;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-        }
+    main { max-width: 1040px; margin: 0 auto; padding: 56px 24px 96px; }
 
-        h2::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 2px;
-        }
+    /* CHART */
+    .chart-card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s ease both;
+    }
+    .chart-card-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--cream);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .chart-card-title { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+    .chart-card-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; padding: 4px 10px; border-radius: 100px;
+      background: rgba(26,58,92,0.1); color: var(--accent);
+    }
+    .chart-body {
+      padding: 32px; display: flex; justify-content: center; align-items: center;
+      min-height: 200px;
+    }
+    .chart-body img {
+      max-width: 100%; height: auto; border-radius: 6px;
+      box-shadow: var(--shadow-md);
+    }
+    .chart-placeholder { text-align: center; color: var(--ink-muted); }
+    .chart-placeholder .icon { font-size: 2.4rem; margin-bottom: 12px; display: block; }
+    .chart-placeholder p { font-size: 0.9rem; }
 
-        .plot-container {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 30px;
-            margin: 30px 0;
-            border: 2px solid #e9ecef;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-        }
+    /* LEGEND */
+    .legend-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .legend-card {
+      padding: 20px 22px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--paper);
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      display: inline-block; margin-right: 8px; vertical-align: middle;
+    }
+    .legend-dot.blue { background: #4a90d9; }
+    .legend-dot.red  { background: #d94a4a; }
+    .legend-title {
+      font-weight: 700; font-size: 0.85rem; color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .legend-desc { font-size: 0.8rem; color: var(--ink-muted); line-height: 1.55; }
 
-        .plot-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+    /* HOW TO READ */
+    .reading-card {
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .reading-header {
+      background: var(--ink);
+      padding: 20px 28px;
+    }
+    .reading-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--paper);
+    }
+    .reading-body {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .reading-item {
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .reading-item:nth-child(odd) { border-right: 1px solid var(--border); }
+    .reading-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--gold-dim);
+      margin-bottom: 6px; display: block;
+    }
+    .reading-text { font-size: 0.85rem; color: var(--ink-2); line-height: 1.55; }
 
-        .plot-image:hover {
-            transform: scale(1.02);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-        }
+    /* KEY OBS */
+    .obs-list {
+      display: flex; flex-direction: column; gap: 12px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .obs-item {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 18px 22px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--paper);
+      transition: background 0.2s;
+    }
+    .obs-item:hover { background: var(--cream); }
+    .obs-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem; font-weight: 500; color: var(--gold);
+      background: rgba(201,168,76,0.12);
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .obs-title { font-weight: 600; font-size: 0.88rem; color: var(--ink); margin-bottom: 4px; }
+    .obs-desc { font-size: 0.82rem; color: var(--ink-muted); line-height: 1.55; }
 
-        .error-message {
-            background: linear-gradient(135deg, #ff6b6b, #ffa726);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin: 30px 0;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
+    /* WHAT IS SHAP */
+    .shap-explainer {
+      background: var(--cream); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--r); padding: 28px 32px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s 0.35s ease both;
+    }
+    .shap-explainer h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-bottom: 10px;
+    }
+    .shap-explainer p { font-size: 0.87rem; color: var(--ink-muted); line-height: 1.7; }
 
-        .info-section {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin: 30px 0;
-            text-align: left;
-        }
+    /* FOOTER NAV */
+    .page-footer-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 40px; margin-top: 8px;
+      border-top: 1px solid var(--border);
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+    .footer-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.88rem; font-weight: 600; text-decoration: none;
+      padding: 12px 22px; border-radius: 8px;
+      border: 1.5px solid var(--border); color: var(--ink);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .footer-btn:hover { background: var(--cream); border-color: var(--ink-muted); }
+    .footer-btn.primary {
+      background: var(--ink); color: var(--paper); border-color: var(--ink);
+    }
+    .footer-btn.primary:hover { background: var(--ink-2); }
 
-        .info-section h3 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .info-section p {
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-
-        .info-section ul {
-            margin-left: 20px;
-            line-height: 1.8;
-        }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            text-decoration: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            margin-top: 20px;
-        }
-
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-            text-decoration: none;
-        }
-
-        .back-button:active {
-            transform: translateY(0);
-        }
-
-        .explanation-text {
-            background: white;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-            text-align: left;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-
-        .explanation-text h4 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        .explanation-text p {
-            color: #555;
-            line-height: 1.6;
-        }
-
-        /* Loading animation */
-        .loading {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            h2 {
-                font-size: 1.8rem;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .plot-container {
-                padding: 20px;
-            }
-            
-            .info-section {
-                padding: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        /* Fade in animation */
-        .container {
-            opacity: 0;
-            animation: fadeIn 0.8s ease forwards;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .page-header { padding: 40px 20px 32px; }
+      .reading-body { grid-template-columns: 1fr; }
+      .reading-item:nth-child(odd) { border-right: none; }
+      .page-footer-nav { flex-direction: column; gap: 12px; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🔍 SHAP Feature Interaction Analysis</h2>
 
-        {% if image_path %}
-            <div class="explanation-text">
-                <h4>What is SHAP?</h4>
-                <p>SHAP (SHapley Additive exPlanations) values explain feature interactions and their impact on model predictions. This interaction plot reveals how Ethnicity and Gender features work together to influence hiring decisions, showing potential bias patterns in the model's behavior.</p>
-            </div>
+<nav>
+  <a href="/" class="nav-logo">Lex<span>AI</span></a>
+  <a href="/" class="back-link">← Back to Home</a>
+</nav>
 
-            <div class="plot-container">
-                <img src="{{ url_for('static', filename='shap_summary.png') }}" 
-                     alt="SHAP Summary Plot showing feature importance and impact on model predictions" 
-                     class="plot-image">
-            </div>
+<div class="page-header">
+  <div class="page-header-inner">
+    <span class="page-eyebrow">Explainable AI · Feature Analysis</span>
+    <h1 class="page-title">SHAP Feature Explanations</h1>
+    <p class="page-desc">Shapley Additive Explanations reveal how each feature drives the model's hiring predictions — no black box.</p>
+  </div>
+</div>
 
-            <div class="info-section">
-                <h3>🔍 How to Read This Interaction Plot</h3>
-                <ul>
-                    <li><strong>Y-axis:</strong> Feature interactions (Ethnicity-Ethnicity, Ethnicity-Gender, Gender-Gender)</li>
-                    <li><strong>X-axis:</strong> SHAP interaction values (impact on model output)</li>
-                    <li><strong>Color coding:</strong> Blue and red dots represent different feature value combinations</li>
-                    <li><strong>Dot position:</strong> Right = increases prediction, Left = decreases prediction</li>
-                    <li><strong>Clustering patterns:</strong> Tight clusters suggest consistent interaction effects</li>
-                </ul>
-                <p style="margin-top: 15px;"><strong>Key Observations:</strong></p>
-                <ul>
-                    <li><strong>Ethnicity-Gender interactions:</strong> Show varying impacts around zero, indicating complex demographic interactions</li>
-                    <li><strong>Gender-Gender effects:</strong> Display spread patterns suggesting gender has nuanced internal effects</li>
-                    <li><strong>Symmetrical patterns:</strong> Both positive and negative SHAP values indicate bidirectional feature influences</li>
-                </ul>
-            </div>
+<main>
 
-        {% else %}
-            <div class="error-message">
-                ⚠️ SHAP summary plot not available. Please ensure the model has been trained and SHAP analysis has been completed.
-            </div>
-            
-            <div class="explanation-text">
-                <h4>🔄 Troubleshooting</h4>
-                <p>If you're seeing this message, it could be because:</p>
-                <ul style="margin-left: 20px; margin-top: 10px;">
-                    <li>The model hasn't been trained yet</li>
-                    <li>SHAP analysis is still processing</li>
-                    <li>There was an error generating the plot</li>
-                </ul>
-            </div>
-        {% endif %}
-
-        <a href="/" class="back-button">⬅ Back to Home</a>
+  <!-- CHART -->
+  <div class="chart-card">
+    <div class="chart-card-header">
+      <span class="chart-card-title">SHAP Feature Interaction Plot — Ethnicity × Gender</span>
+      <span class="chart-card-tag">XAI · SHAP</span>
     </div>
+    <div class="chart-body">
+      {% if image_path %}
+        <img src="{{ url_for('static', filename='shap_summary.png') }}"
+             alt="SHAP summary plot showing feature importance and interactions">
+      {% else %}
+        <div class="chart-placeholder">
+          <span class="icon">🔍</span>
+          <p>SHAP plot not yet available.<br>Train the model and run SHAP analysis to generate this chart.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-grid">
+    <div class="legend-card">
+      <div class="legend-title"><span class="legend-dot blue"></span>Negative SHAP Value</div>
+      <div class="legend-desc">Blue dots indicate feature combinations that push the predicted hiring probability <strong>downward</strong>.</div>
+    </div>
+    <div class="legend-card">
+      <div class="legend-title"><span class="legend-dot red"></span>Positive SHAP Value</div>
+      <div class="legend-desc">Red dots indicate feature combinations that push the predicted hiring probability <strong>upward</strong>.</div>
+    </div>
+    <div class="legend-card">
+      <div class="legend-title">← Left of Zero</div>
+      <div class="legend-desc">Data points left of centre <strong>decrease</strong> the model's likelihood of a positive hiring prediction.</div>
+    </div>
+    <div class="legend-card">
+      <div class="legend-title">Right of Zero →</div>
+      <div class="legend-desc">Data points right of centre <strong>increase</strong> the model's likelihood of a positive hiring prediction.</div>
+    </div>
+  </div>
+
+  <!-- HOW TO READ -->
+  <div class="reading-card">
+    <div class="reading-header">
+      <h3>How to read this interaction plot</h3>
+    </div>
+    <div class="reading-body">
+      <div class="reading-item">
+        <span class="reading-label">Y-Axis</span>
+        <p class="reading-text">Feature interaction pairs — Ethnicity×Ethnicity, Ethnicity×Gender, Gender×Gender — showing all pairwise interaction effects computed by SHAP.</p>
+      </div>
+      <div class="reading-item">
+        <span class="reading-label">X-Axis</span>
+        <p class="reading-text">SHAP interaction value magnitude. Larger absolute values mean stronger influence on the prediction output.</p>
+      </div>
+      <div class="reading-item">
+        <span class="reading-label">Dot Spread</span>
+        <p class="reading-text">Wide spreads indicate high variance in how a feature pair affects predictions — suggesting inconsistent or unstable model behaviour across this attribute combination.</p>
+      </div>
+      <div class="reading-item">
+        <span class="reading-label">Clustering</span>
+        <p class="reading-text">Tight clusters near zero mean the interaction has little effect. Clusters far from zero reveal systematic bias toward or against specific feature combinations.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY OBSERVATIONS -->
+  <div class="obs-list">
+    <div class="obs-item">
+      <div class="obs-num">01</div>
+      <div>
+        <div class="obs-title">Ethnicity × Gender interactions</div>
+        <div class="obs-desc">Values scatter around zero but with notable variance, indicating that the combination of ethnicity and gender creates complex, non-linear effects on hiring prediction that go beyond either feature alone.</div>
+      </div>
+    </div>
+    <div class="obs-item">
+      <div class="obs-num">02</div>
+      <div>
+        <div class="obs-title">Gender × Gender self-interaction</div>
+        <div class="obs-desc">A spread pattern on the Gender×Gender row reveals that gender encodes internal effects beyond binary classification — likely reflecting patterns from training data distributions.</div>
+      </div>
+    </div>
+    <div class="obs-item">
+      <div class="obs-num">03</div>
+      <div>
+        <div class="obs-title">Symmetrical positive/negative patterns</div>
+        <div class="obs-desc">Bidirectional SHAP values confirm the model does not uniformly favour one demographic group — but the spread indicates calibration is needed to achieve true parity.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IS SHAP -->
+  <div class="shap-explainer">
+    <h3>What is SHAP?</h3>
+    <p>SHAP (SHapley Additive exPlanations) is grounded in cooperative game theory. It assigns each feature a contribution value for each prediction, calculated so that contributions sum to the difference between the model output and a baseline. Interaction SHAP values extend this to pairs of features — revealing not just what matters, but <em>how features work together</em> to influence decisions. This makes it one of the gold standards for explainable AI in high-stakes hiring and lending applications.</p>
+  </div>
+
+  <!-- FOOTER NAV -->
+  <div class="page-footer-nav">
+    <a href="/audit" class="footer-btn">← Bias Audit</a>
+    <a href="/" class="footer-btn primary">Back to Demo →</a>
+  </div>
+
+</main>
+
 </body>
 </html>

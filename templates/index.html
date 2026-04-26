@@ -1,354 +1,733 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Law Firm Recruitment Bias App</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LexAI — Fair Hiring for Law Firms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────────── */
+    :root {
+      --ink:        #0d0f14;
+      --ink-2:      #2a2d36;
+      --ink-muted:  #6b7280;
+      --paper:      #fafaf8;
+      --cream:      #f4f1eb;
+      --gold:       #c9a84c;
+      --gold-light: #e8d49a;
+      --gold-dim:   #7a6330;
+      --accent:     #1a3a5c;
+      --accent-2:   #2d6a9f;
+      --danger:     #b94040;
+      --success:    #2e7d52;
+      --border:     rgba(13,15,20,0.10);
+      --shadow-sm:  0 2px 8px rgba(13,15,20,0.06);
+      --shadow-md:  0 8px 32px rgba(13,15,20,0.10);
+      --shadow-lg:  0 24px 64px rgba(13,15,20,0.14);
+      --r:          10px;
+      --r-lg:       18px;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    /* ── RESET ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-        }
+    /* ── NOISE TEXTURE OVERLAY ──────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 999;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 2rem;
-            position: relative;
-        }
+    /* ── NAV ────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      background: rgba(250,250,248,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--ink);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links {
+      display: flex; gap: 8px; align-items: center; list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.875rem; font-weight: 500; color: var(--ink-muted);
+      text-decoration: none; padding: 6px 14px; border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover { color: var(--ink); background: var(--cream); }
+    .nav-badge {
+      background: var(--gold); color: var(--ink);
+      font-size: 0.75rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 100px;
+      margin-left: 6px;
+    }
 
-        h2::after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            margin: 15px auto;
-            border-radius: 2px;
-        }
+    /* ── HERO ───────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(26,58,92,0.08) 0%, transparent 60%),
+        var(--paper);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'DM Mono', monospace; font-size: 0.72rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--gold-dim); background: rgba(201,168,76,0.10);
+      border: 1px solid rgba(201,168,76,0.3);
+      padding: 6px 16px; border-radius: 100px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease both;
+    }
+    .hero-badge::before {
+      content: ''; width: 6px; height: 6px;
+      background: var(--gold); border-radius: 50%;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900; line-height: 1.07;
+      letter-spacing: -2px;
+      color: var(--ink);
+      max-width: 820px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+    .hero h1 em {
+      font-style: italic; color: var(--gold);
+      position: relative;
+    }
+    .hero-sub {
+      font-size: 1.125rem; color: var(--ink-muted);
+      max-width: 540px; margin: 28px auto 0;
+      font-weight: 400; line-height: 1.7;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      margin-top: 44px;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+    .btn-primary {
+      background: var(--ink); color: var(--paper);
+      padding: 14px 32px; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 600;
+      text-decoration: none; border: none; cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(13,15,20,0.18);
+    }
+    .btn-primary:hover {
+      background: var(--ink-2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(13,15,20,0.22);
+    }
+    .btn-secondary {
+      background: transparent; color: var(--ink);
+      padding: 14px 32px; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 500;
+      text-decoration: none; border: 1.5px solid var(--border);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--ink-muted); background: var(--cream); }
+    .hero-metrics {
+      display: flex; gap: 48px; justify-content: center; flex-wrap: wrap;
+      margin-top: 64px; padding-top: 48px;
+      border-top: 1px solid var(--border);
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+    .metric { text-align: center; }
+    .metric-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem; font-weight: 700; color: var(--ink);
+      line-height: 1;
+    }
+    .metric-num span { color: var(--gold); }
+    .metric-label {
+      font-size: 0.78rem; color: var(--ink-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-top: 6px; font-weight: 500;
+    }
 
-        .form-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
+    /* ── SECTION SHELL ──────────────────────────────────────────── */
+    section { padding: 96px 24px; }
+    .section-inner { max-width: 1040px; margin: 0 auto; }
+    .section-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--gold-dim);
+      margin-bottom: 16px; display: block;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 700; line-height: 1.15;
+      letter-spacing: -0.8px; color: var(--ink);
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 1rem; color: var(--ink-muted);
+      max-width: 520px; line-height: 1.7;
+    }
 
-        .form-column {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    /* ── HOW IT WORKS ───────────────────────────────────────────── */
+    .steps-section { background: var(--cream); }
+    .steps-header { margin-bottom: 56px; }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .step-card {
+      background: var(--paper);
+      padding: 36px 28px;
+      position: relative;
+      transition: background 0.25s;
+    }
+    .step-card:hover { background: var(--cream); }
+    .step-card + .step-card { border-left: 1px solid var(--border); }
+    .step-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; font-weight: 500;
+      letter-spacing: 0.1em; color: var(--gold);
+      display: block; margin-bottom: 20px;
+    }
+    .step-icon {
+      font-size: 2rem; display: block; margin-bottom: 16px;
+    }
+    .step-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem; font-weight: 700; color: var(--ink);
+      margin-bottom: 10px;
+    }
+    .step-desc { font-size: 0.88rem; color: var(--ink-muted); line-height: 1.65; }
+    .step-connector {
+      position: absolute; right: -1px; top: 50%;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      background: var(--gold);
+      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      z-index: 2;
+    }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
+    /* ── FORM SECTION ───────────────────────────────────────────── */
+    .form-section { background: var(--paper); }
+    .form-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 56px;
+    }
+    .form-card {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 36px;
+    }
+    .form-card-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem; font-weight: 700; color: var(--ink);
+      margin-bottom: 24px; padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .field-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--ink-2); margin-bottom: 7px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    select, input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem; color: var(--ink);
+      background: var(--paper);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+    }
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    textarea { resize: vertical; min-height: 110px; }
+    .submit-btn {
+      width: 100%; margin-top: 8px;
+      background: var(--ink); color: var(--paper);
+      border: none; border-radius: var(--r);
+      padding: 14px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .submit-btn:hover { background: var(--ink-2); transform: translateY(-1px); }
 
-        .form-group.full-width {
-            grid-column: 1 / -1;
-        }
+    /* prediction result */
+    .prediction-result {
+      margin-top: 20px;
+      padding: 20px 24px;
+      border-radius: var(--r);
+      border: 1.5px solid var(--border);
+      background: var(--paper);
+      font-size: 1rem; font-weight: 500;
+      min-height: 64px; display: flex; align-items: center;
+      color: var(--ink-muted);
+    }
 
-        label {
-            font-weight: 600;
-            color: #34495e;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
+    /* ── AUDIT LINKS ────────────────────────────────────────────── */
+    .audit-section { background: var(--ink); }
+    .audit-inner {
+      max-width: 1040px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+      align-items: center;
+    }
+    .audit-text .section-eyebrow { color: var(--gold-light); opacity: 0.7; }
+    .audit-text .section-title { color: var(--paper); }
+    .audit-text .section-desc { color: rgba(250,250,248,0.55); }
+    .audit-cards { display: flex; flex-direction: column; gap: 14px; }
+    .audit-card {
+      display: flex; align-items: center; gap: 18px;
+      background: rgba(250,250,248,0.05);
+      border: 1px solid rgba(250,250,248,0.12);
+      border-radius: var(--r);
+      padding: 20px 24px;
+      text-decoration: none; color: var(--paper);
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+    .audit-card:hover {
+      background: rgba(250,250,248,0.10);
+      border-color: var(--gold);
+      transform: translateX(4px);
+    }
+    .audit-card-icon {
+      font-size: 1.6rem;
+      width: 48px; height: 48px;
+      background: rgba(201,168,76,0.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .audit-card-body { flex: 1; }
+    .audit-card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 3px; }
+    .audit-card-desc { font-size: 0.8rem; color: rgba(250,250,248,0.45); }
+    .audit-card-arrow { color: var(--gold); font-size: 1.1rem; opacity: 0.7; }
 
-        select, input[type="text"], input[type="number"] {
-            padding: 12px 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
+    /* ── FEATURE STRIP ──────────────────────────────────────────── */
+    .features-section { background: var(--paper); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .feature-card {
+      padding: 28px 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+    .feature-icon { font-size: 1.6rem; margin-bottom: 16px; display: block; }
+    .feature-title {
+      font-weight: 700; font-size: 0.95rem; color: var(--ink);
+      margin-bottom: 8px;
+    }
+    .feature-desc { font-size: 0.84rem; color: var(--ink-muted); line-height: 1.6; }
 
-        select:focus, input[type="text"]:focus, input[type="number"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+    /* ── TECH STACK ─────────────────────────────────────────────── */
+    .stack-strip {
+      background: var(--cream);
+      padding: 32px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stack-inner {
+      max-width: 1040px; margin: 0 auto;
+      display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+    }
+    .stack-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ink-muted);
+      flex-shrink: 0;
+    }
+    .stack-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stack-tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem; font-weight: 500;
+      padding: 4px 12px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 100px; color: var(--ink-2);
+    }
 
-        textarea {
-            padding: 15px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 120px;
-            transition: all 0.3s ease;
-        }
+    /* ── FOOTER ─────────────────────────────────────────────────── */
+    footer {
+      background: var(--ink);
+      padding: 40px 24px;
+      text-align: center;
+    }
+    footer p {
+      font-size: 0.84rem; color: rgba(250,250,248,0.35);
+    }
+    footer a { color: var(--gold); text-decoration: none; }
 
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+    /* ── ANIMATIONS ─────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
 
-        .submit-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            align-self: center;
-            margin-top: 20px;
-        }
-
-        .submit-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .prediction-result {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 10px;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        .divider {
-            border: none;
-            height: 2px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            margin: 40px 0;
-            border-radius: 1px;
-        }
-
-        .audit-section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-
-        .audit-links {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .audit-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 15px 25px;
-            background: white;
-            border: 2px solid #667eea;
-            color: #667eea;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.1);
-        }
-
-        .audit-link:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .form-container {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            h2 {
-                font-size: 1.5rem;
-            }
-            
-            .audit-links {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .audit-link {
-                width: 100%;
-                max-width: 300px;
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-        }
-
-        /* Animation for form elements */
-        .form-group {
-            opacity: 0;
-            animation: slideIn 0.6s ease forwards;
-        }
-
-        .form-group:nth-child(1) { animation-delay: 0.1s; }
-        .form-group:nth-child(2) { animation-delay: 0.2s; }
-        .form-group:nth-child(3) { animation-delay: 0.3s; }
-        .form-group:nth-child(4) { animation-delay: 0.4s; }
-        .form-group:nth-child(5) { animation-delay: 0.5s; }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    /* ── RESPONSIVE ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .hero h1 { letter-spacing: -1px; }
+      .hero-metrics { gap: 28px; }
+      .form-layout { grid-template-columns: 1fr; }
+      .audit-inner { grid-template-columns: 1fr; }
+      .step-card + .step-card { border-left: none; border-top: 1px solid var(--border); }
+      .step-connector { display: none; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Candidate Prediction</h2>
-        <form action="/predict" method="post">
-            <div class="form-container">
-                <div class="form-column">
-                    <div class="form-group">
-                        <label for="gender">Gender:</label>
-                        <select name="gender" id="gender" required>
-                            <option value="0">Male</option>
-                            <option value="1">Female</option>
-                        </select>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="ethnicity">Ethnicity:</label>
-                        <select name="ethnicity" id="ethnicity" required>
-                            <option value="0">Hausa</option>
-                            <option value="1">Igbo</option>
-                            <option value="2">Yoruba</option>
-                            <option value="3">Fulani</option>
-                            <option value="4">Tiv</option>
-                            <option value="5">Ijaw</option>
-                            <option value="6">Other</option>
-                        </select>
-                    </div>
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav>
+  <a href="/" class="nav-logo">Lex<span>AI</span></a>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#predict">Try Demo</a></li>
+    <li><a href="/audit">Bias Audit</a></li>
+    <li><a href="/shap">SHAP <span class="nav-badge">XAI</span></a></li>
+  </ul>
+</nav>
 
-                    <div class="form-group">
-                        <label for="university">University:</label>
-                        <select name="university" id="university" required>
-                            <option value="0">ABU Zaria</option>
-                            <option value="1">UNN</option>
-                            <option value="2">UI</option>
-                            <option value="3">UNILAG</option>
-                            <option value="4">UNIBEN</option>
-                            <option value="5">LASU</option>
-                            <option value="6">Babcock</option>
-                            <option value="7">Covenant</option>
-                            <option value="8">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="specialty">Specialty:</label>
-                        <select name="specialty" id="specialty" required>
-                            <option value="0">Corporate</option>
-                            <option value="1">Criminal</option>
-                            <option value="2">Family</option>
-                            <option value="3">Human Rights</option>
-                            <option value="4">Intellectual Property</option>
-                            <option value="5">Tax</option>
-                            <option value="6">Other</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-column">
-                    <div class="form-group">
-                        <label for="experience">Experience Level:</label>
-                        <select name="experience" id="experience" required>
-                            <option value="0">Junior</option>
-                            <option value="1">Mid-level</option>
-                            <option value="2">Senior</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="gpa">GPA:</label>
-                        <input type="text" name="gpa" id="gpa" placeholder="e.g., 3.75" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="publications">Publications:</label>
-                        <input type="number" name="publications" id="publications" placeholder="Number of publications" min="0" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="interview">Interview Score:</label>
-                        <input type="text" name="interview" id="interview" placeholder="e.g., 8.5" required>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group full-width">
-                <label for="resume">Resume Text:</label>
-                <textarea name="resume" id="resume" placeholder="Enter the candidate's resume text here..." required></textarea>
-            </div>
-
-            <input type="submit" value="Predict Candidate Success" class="submit-btn">
-        </form>
-
-        <div class="prediction-result">
-            <h3>{{ prediction_text }}</h3>
-        </div>
-
-        <hr class="divider">
-        
-        <div class="audit-section">
-            <h2>Bias & Explainability</h2>
-            <div class="audit-links">
-                <a href="/audit" class="audit-link">📊 View Bias Audit</a>
-                <a href="/shap" class="audit-link">🔍 View SHAP Explanations</a>
-            </div>
-        </div>
+<!-- ── HERO ────────────────────────────────────────────────── -->
+<section class="hero">
+  <span class="hero-badge">ML · Fairness · Explainability</span>
+  <h1>Hiring decisions that are<br><em>fair by design</em></h1>
+  <p class="hero-sub">
+    An AI recruitment assistant built for Nigerian law firms — with built-in bias detection, SHAP explainability, and demographic fairness auditing.
+  </p>
+  <div class="hero-cta">
+    <a href="#predict" class="btn-primary">Try the Demo →</a>
+    <a href="#how-it-works" class="btn-secondary">How it works</a>
+  </div>
+  <div class="hero-metrics">
+    <div class="metric">
+      <div class="metric-num">9<span>+</span></div>
+      <div class="metric-label">Candidate Features</div>
     </div>
+    <div class="metric">
+      <div class="metric-num"><span>&lt;</span>1s</div>
+      <div class="metric-label">Prediction Time</div>
+    </div>
+    <div class="metric">
+      <div class="metric-num">2</div>
+      <div class="metric-label">Fairness Reports</div>
+    </div>
+    <div class="metric">
+      <div class="metric-num">100<span>%</span></div>
+      <div class="metric-label">Explainable</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STACK STRIP ──────────────────────────────────────────── -->
+<div class="stack-strip">
+  <div class="stack-inner">
+    <span class="stack-label">Built with</span>
+    <div class="stack-tags">
+      <span class="stack-tag">Python</span>
+      <span class="stack-tag">Flask</span>
+      <span class="stack-tag">Scikit-learn</span>
+      <span class="stack-tag">SHAP</span>
+      <span class="stack-tag">Pandas</span>
+      <span class="stack-tag">Matplotlib</span>
+      <span class="stack-tag">Render</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ─────────────────────────────────────────── -->
+<section class="steps-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="steps-header reveal">
+      <span class="section-eyebrow">How it works</span>
+      <h2 class="section-title">From candidate profile<br>to fair prediction</h2>
+      <p class="section-desc">Four steps from input to explainable, audited hiring recommendation.</p>
+    </div>
+    <div class="steps-grid reveal">
+      <div class="step-card">
+        <span class="step-num">STEP 01</span>
+        <span class="step-icon">📝</span>
+        <div class="step-title">Enter Profile</div>
+        <p class="step-desc">Input candidate details — GPA, specialty, university, experience, interview score, and resume text.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">STEP 02</span>
+        <span class="step-icon">🤖</span>
+        <div class="step-title">ML Prediction</div>
+        <p class="step-desc">A trained classification model processes the features and outputs a hiring likelihood score.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">STEP 03</span>
+        <span class="step-icon">🔍</span>
+        <div class="step-title">SHAP Explanation</div>
+        <p class="step-desc">SHAP values break down exactly which features drove the prediction — no black boxes.</p>
+      </div>
+      <div class="step-card">
+        <span class="step-num">STEP 04</span>
+        <span class="step-icon">⚖️</span>
+        <div class="step-title">Bias Audit</div>
+        <p class="step-desc">Demographic parity analysis surfaces any gender or ethnicity disparities across the model's decisions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PREDICTION FORM ──────────────────────────────────────── -->
+<section class="form-section" id="predict">
+  <div class="section-inner">
+    <div class="reveal">
+      <span class="section-eyebrow">Live Demo</span>
+      <h2 class="section-title">Predict candidate success</h2>
+      <p class="section-desc">Fill in the candidate details below and the model will return an instant prediction.</p>
+    </div>
+
+    <form action="/predict" method="post">
+      <div class="form-layout reveal">
+        <!-- LEFT -->
+        <div>
+          <div class="form-card">
+            <div class="form-card-title">👤 Candidate Background</div>
+            <div class="field-group">
+              <label for="gender">Gender</label>
+              <select name="gender" id="gender" required>
+                <option value="0">Male</option>
+                <option value="1">Female</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="ethnicity">Ethnicity</label>
+              <select name="ethnicity" id="ethnicity" required>
+                <option value="0">Hausa</option>
+                <option value="1">Igbo</option>
+                <option value="2">Yoruba</option>
+                <option value="3">Fulani</option>
+                <option value="4">Tiv</option>
+                <option value="5">Ijaw</option>
+                <option value="6">Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="university">University</label>
+              <select name="university" id="university" required>
+                <option value="0">ABU Zaria</option>
+                <option value="1">UNN</option>
+                <option value="2">UI</option>
+                <option value="3">UNILAG</option>
+                <option value="4">UNIBEN</option>
+                <option value="5">LASU</option>
+                <option value="6">Babcock</option>
+                <option value="7">Covenant</option>
+                <option value="8">Other</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="specialty">Legal Specialty</label>
+              <select name="specialty" id="specialty" required>
+                <option value="0">Corporate</option>
+                <option value="1">Criminal</option>
+                <option value="2">Family</option>
+                <option value="3">Human Rights</option>
+                <option value="4">Intellectual Property</option>
+                <option value="5">Tax</option>
+                <option value="6">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+          <div class="form-card">
+            <div class="form-card-title">📊 Performance Metrics</div>
+            <div class="field-group">
+              <label for="experience">Experience Level</label>
+              <select name="experience" id="experience" required>
+                <option value="0">Junior</option>
+                <option value="1">Mid-level</option>
+                <option value="2">Senior</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label for="gpa">GPA</label>
+              <input type="text" name="gpa" id="gpa" placeholder="e.g. 3.75" required>
+            </div>
+            <div class="field-group">
+              <label for="publications">Publications</label>
+              <input type="number" name="publications" id="publications" placeholder="Number of publications" min="0" required>
+            </div>
+            <div class="field-group">
+              <label for="interview">Interview Score</label>
+              <input type="text" name="interview" id="interview" placeholder="e.g. 8.5" required>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-title">📄 Resume</div>
+            <div class="field-group" style="margin-bottom:0;">
+              <label for="resume">Resume Text</label>
+              <textarea name="resume" id="resume" placeholder="Paste the candidate's resume text or a short summary here…" required></textarea>
+            </div>
+          </div>
+
+          <input type="submit" value="Run Prediction →" class="submit-btn">
+
+          <div class="prediction-result">
+            <span>{{ prediction_text or "Prediction will appear here after you submit." }}</span>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ── AUDIT LINKS ───────────────────────────────────────────── -->
+<section class="audit-section">
+  <div class="audit-inner">
+    <div class="audit-text reveal">
+      <span class="section-eyebrow">Responsible AI</span>
+      <h2 class="section-title">See inside the model</h2>
+      <p class="section-desc">Every prediction comes with two transparency reports — demographic fairness auditing and SHAP feature explanations.</p>
+    </div>
+    <div class="audit-cards reveal">
+      <a href="/audit" class="audit-card">
+        <div class="audit-card-icon">📊</div>
+        <div class="audit-card-body">
+          <div class="audit-card-title">Bias Audit Report</div>
+          <div class="audit-card-desc">Gender & ethnicity parity analysis across all predictions</div>
+        </div>
+        <span class="audit-card-arrow">→</span>
+      </a>
+      <a href="/shap" class="audit-card">
+        <div class="audit-card-icon">🔍</div>
+        <div class="audit-card-body">
+          <div class="audit-card-title">SHAP Explanations</div>
+          <div class="audit-card-desc">Feature importance & interaction plots for full transparency</div>
+        </div>
+        <span class="audit-card-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ─────────────────────────────────────────────── -->
+<section class="features-section">
+  <div class="section-inner">
+    <div class="reveal">
+      <span class="section-eyebrow">Why this project</span>
+      <h2 class="section-title">What makes it stand out</h2>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title">Instant Prediction</div>
+        <p class="feature-desc">Sub-second inference powered by a trained Scikit-learn classifier deployed on Render.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚖️</span>
+        <div class="feature-title">Demographic Parity</div>
+        <p class="feature-desc">Proactively surfaces gender and ethnicity bias gaps before deployment decisions are made.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔍</span>
+        <div class="feature-title">Fully Explainable</div>
+        <p class="feature-desc">SHAP interaction plots reveal every feature's contribution — no black-box predictions.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🇳🇬</span>
+        <div class="feature-title">Nigeria-Specific</div>
+        <p class="feature-desc">Trained on Nigerian law firm hiring patterns with local universities, ethnicities, and specialties.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📋</span>
+        <div class="feature-title">NLP Resume Parsing</div>
+        <p class="feature-desc">Resume text is vectorized and used as an additional signal alongside structured features.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🛡️</span>
+        <div class="feature-title">Responsible by Design</div>
+        <p class="feature-desc">Bias reporting is built in — not bolted on — making auditing a first-class citizen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────── -->
+<footer>
+  <p>LexAI · Built with Python, Flask & Machine Learning · <a href="#predict">Try the demo</a></p>
+</footer>
+
+<script>
+  // Scroll-triggered reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => io.observe(el));
+</script>
 </body>
 </html>
